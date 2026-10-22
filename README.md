@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Target Display — website
 
-## Getting Started
+Marketing site for Target Display Co., Inc., rebuilt as a fully self-hosted
+Next.js app. No Webflow runtime, no external CDN, no third-party asset or font
+requests at render time.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router, static prerendering)
+- React 19
+- Tailwind CSS v4 (imported in `src/app/globals.css`, alongside the site's own
+  design-system CSS)
+- Manrope via `next/font` (downloaded at build time and served locally)
+
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev     # http://localhost:3000
+npm run build   # production build (all routes prerendered)
+npm run start   # serve the production build
+npm run lint    # eslint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Routes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | Contents |
+| --- | --- |
+| `/` | Home |
+| `/about` | Company story, FAQ, marquee CTA |
+| `/projects` | Project gallery with marquee rows |
+| `/sectors` | Sector overview |
+| `/contact` | Contact form |
+| `/shelving` | Product page |
+| `/racking` | Product page |
+| `/store-equipment` | Product page |
+| `/product-display-signages` | Product page |
+| `/fresh-concepts` | Product page |
+| `/pop-ups-kiosks` | Product page |
+| `/cabinets-counters` | Product page |
+| `/privacy-policy` | Privacy policy |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Structure
 
-## Learn More
+```
+src/
+  app/                 route segments, each with its own metadata
+    globals.css        design tokens + all page CSS
+    layout.tsx         navbar, footer, cookie consent, JSON-LD
+  components/          navbar, footer, product-page view, forms, cookie UI
+  lib/
+    site.ts            company info, nav links, product links
+    productPages.ts    structured content for the seven product pages
+    projectsData.ts    projects page data
+    aboutData.ts       about page FAQ + marquee data
+    assets.ts          asset paths + marquee logos
+public/assets/         all images, organised per page
+```
 
-To learn more about Next.js, take a look at the following resources:
+Product pages share `components/product-page.tsx` and are driven by
+`lib/productPages.ts`; a product route is a thin file that picks its dataset.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Assets
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Everything lives under `public/assets`, organised per page:
 
-## Deploy on Vercel
+```
+public/assets/
+  home/  about/  projects/  sectors/  contact/
+  products/<slug>/hero|cards|icons/
+  logo/  icons/
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+All paths are centralised in `src/lib/assets.ts`. Images are served by
+`next/image` from local files only — there is no remote allowlist in
+`next.config.ts`, so an off-site image URL fails the build/render instead of
+silently pulling from a CDN.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Cookies
+
+`components/cookie-consent.tsx` renders the first-visit banner and the settings
+dialog, and is mounted once in `layout.tsx`. The choice is stored in
+`localStorage` under `td_cookie_consent` and published as:
+
+- `data-cookie-analytics` / `data-cookie-marketing` on `<html>`
+- a `td:consent-change` window event
+- Google Consent Mode (`gtag('consent', 'update', …)`) when `gtag` exists
+
+The footer's "Cookie settings" button reopens the dialog from any page.
